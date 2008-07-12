@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
 def parsed_ast
   string = File.read(File.dirname(__FILE__)+'/../fixtures/ey00-s00348.xen')
-  XenConfigFile::Parser.new.simple_parse(string)
+  XenConfigFile::GrammarParser.new.simple_parse(string)
 end
 
 
@@ -10,7 +10,7 @@ describe XenConfigFile::AST do
   include XenConfigFile::AST
 
   before(:all) do
-    @ast = XenConfigFile::Parser.new.simple_parse(File.read(File.dirname(__FILE__)+'/../fixtures/ey00-s00348.xen'))
+    @ast = XenConfigFile::GrammarParser.new.simple_parse(File.read(File.dirname(__FILE__)+'/../fixtures/ey00-s00348.xen'))
   end
 
   describe XenConfigFile::AST::ConfigFile do

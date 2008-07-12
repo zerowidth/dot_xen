@@ -3,7 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 describe XenConfigFile::PrettyPrintVisitor, ".visit" do
   it "returns a string representation of a parsed AST" do
     string = File.read(File.dirname(__FILE__)+'/../fixtures/ey00-s00348.xen')
-    ast = XenConfigFile::Parser.new.simple_parse(string)
+    ast = XenConfigFile::GrammarParser.new.simple_parse(string)
     XenConfigFile::PrettyPrintVisitor.visit(ast).should == <<-EOS
 #  -*- mode: python; -*-
 kernel = '/boot/vmlinuz-2.6.18-xenU'

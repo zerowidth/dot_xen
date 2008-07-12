@@ -1,8 +1,8 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
 if ENV['DO_EM_ALL']
-  describe XenConfigFile::Parser, " simple_parsing " do
-    before(:all) { @parser = XenConfigFile::Parser.new }
+  describe XenConfigFile::GrammarParser, " simple_parsing " do
+    before(:all) { @parser = XenConfigFile::GrammarParser.new }
 
     Dir["#{ENV['EY_FILES'] || File.expand_path(File.dirname(__FILE__)+'/../../../scrapetacular')}/xen/*/*/*.xen"].each_with_index do |input_file, idx|
       describe "#{input_file} as input" do

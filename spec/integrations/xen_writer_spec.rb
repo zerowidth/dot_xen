@@ -1,11 +1,11 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
-describe XenConfigFile::Parser do
+describe XenConfigFile::GrammarParser do
   describe "when re-parsing the pretty-print output and produce the same AST" do
     before(:all) do
       string = File.read(File.dirname(__FILE__)+'/../fixtures/ey00-s00348.xen')
-      @parsed = XenConfigFile::Parser.new.simple_parse(string)
+      @parsed = XenConfigFile::GrammarParser.new.simple_parse(string)
       output = XenConfigFile::PrettyPrintVisitor.visit(@parsed)
-      @reparsed = XenConfigFile::Parser.new.simple_parse(output)
+      @reparsed = XenConfigFile::GrammarParser.new.simple_parse(output)
     end
 
     it "has a reparsed AST" do

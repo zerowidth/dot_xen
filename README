@@ -9,7 +9,7 @@ Usage
 mpro% irb            
 >> require 'lib/dot_xen'
 => true
->> puts XenConfigFile::Parser.new.simple_parse(File.read("spec/fixtures/ey00-s00348.xen")).to_s
+>> puts XenConfigFile::GrammarParser.new.simple_parse(File.read("spec/fixtures/ey00-s00348.xen")).to_s
 #  -*- mode: python; -*-
 kernel = "/boot/vmlinuz-2.6.18-xenU"
 memory = 712

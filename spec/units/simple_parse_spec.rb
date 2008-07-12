@@ -1,8 +1,8 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
-describe XenConfigFile::Parser, ".simple_parse" do
+describe XenConfigFile::GrammarParser, ".simple_parse" do
   before(:all) do
-    @parser = XenConfigFile::Parser.new
+    @parser = XenConfigFile::GrammarParser.new
   end
   describe "with ey00-s000348.xen as input" do
      before(:all) do
