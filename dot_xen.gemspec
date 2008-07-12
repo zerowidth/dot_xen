@@ -5,11 +5,11 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Corey Donohoe"]
   s.autorequire = %q{dot_xen}
-  s.date = %q{2008-06-28}
+  s.date = %q{2008-07-12}
   s.description = %q{A gem that provides reading and writing utils for xen config files.  It's also a really simple use of treetop}
   s.email = %q{atmos@atmos.org}
   s.extra_rdoc_files = ["README", "LICENSE", "TODO"]
-  s.files = ["LICENSE", "README", "Rakefile", "TODO", "lib/dot_xen.rb", "lib/xen", "lib/xen/ast.rb", "lib/xen/xen_config_file_you_shouldnt_use.treetop", "lib/xen/xen_config_file_you_shouldnt_use_node_classes.rb"]
+  s.files = ["LICENSE", "README", "Rakefile", "TODO", "lib/dot_xen.rb", "lib/xen", "lib/xen/ast.rb", "lib/xen/dot_xen.rb", "lib/xen/dot_xen.treetop", "lib/xen/grammar_parser.rb", "lib/xen/pretty_print_visitor.rb"]
   s.has_rdoc = true
   s.homepage = %q{http://atmos.org}
   s.require_paths = ["lib"]
