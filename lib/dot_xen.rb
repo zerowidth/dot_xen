@@ -1,18 +1,16 @@
-require 'rubygems'
-require 'treetop'
+require "rubygems"
+require "treetop"
+require "treehouse"
 
 require File.dirname(__FILE__) + '/xen/ast'
-Treetop.load File.dirname(__FILE__) + '/xen/xen_config_file_you_shouldnt_use'
-require File.dirname(__FILE__) + '/xen/xen_config_file_you_shouldnt_use_node_classes'
+Treetop.load File.dirname(__FILE__) + '/xen/dot_xen.treetop'
 
 module XenConfigFile
   class Parser < Treetop::Runtime::CompiledParser
-    include XenConfigFileYouShouldntUse
-    
+    include Grammar
     def simple_parse(io)
       parsed = parse(io)
-      parsed.eval({}) unless parsed.nil?
+      parsed.build unless parsed.nil?
     end
   end
 end
-

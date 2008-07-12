@@ -57,7 +57,7 @@ namespace :spec do
   desc "Generate specdocs for examples for inclusion in RDoc"
   Spec::Rake::SpecTask.new('doc') do |t|
     t.spec_files = FileList['spec/**/**/*.rb']
-    t.spec_opts = ["--format", "specdoc"]
+    t.spec_opts = ["--format", "specdoc", "--color"]
   end
 end
 
