@@ -12,9 +12,9 @@ maxmem = 4096
 name = "ey00-s00348"
 vif = [ 'bridge=xenbr0' ]
 disk = [
-         "phy:/dev/ey00-data4/root-s00348,sda1,w",
-         "phy:/dev/ey00-data4/swap-s00348,sda2,w",
-         "phy:/dev/ey00-data4/gfs-00218,sdb1,w!",
+         'phy:/dev/ey00-data4/root-s00348,sda1,w',
+         'phy:/dev/ey00-data4/swap-s00348,sda2,w',
+         'phy:/dev/ey00-data4/gfs-00218,sdb1,w!',
        ]
 root = '/dev/sda1 ro'
 vcpus = 1

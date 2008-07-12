@@ -7,40 +7,51 @@ module XenConfigFile
         declarations.select { |v| v.kind_of? Comment }
       end
 
+      def delete(name)
+        if node = self[name]
+          declarations.delete_at(declarations.index(node))
+        end
+      end
+
       def [](name)
         declarations.detect do |declaration|
-          ( declaration.kind_of?(Assignment) ||
-            declaration.kind_of?(ArrayAssignment) ||
-            declaration.kind_of?(DiskArrayAssignment)
-          ) && declaration.name.value == name
+          declaration.respond_to?(:name) && declaration.name.value == name
         end
       end
 
       def []=(name, value)
-        new_value = node_for(value)
+        new_name = StringLiteral.new(:value => name)
 
-        if self[name]
-          self[name].value = new_value
-        else
-          new_name = StringLiteral.new(:value => name)
-          if value.kind_of?(Array)
-            declarations << ArrayAssignment.new(:name => new_name, :values => new_value)
+        index = self[name] ? declarations.index(self[name]) : declarations.size
+
+        new_value = node_for(value, name=="disk")
+        new_node = if value.kind_of?(Array)
+          if name == "disk"
+            DiskArrayAssignment.new(:name => new_name, :disks => new_value)
           else
-            declarations << Assignment.new(:name => new_name, :value => new_value)
+            ArrayAssignment.new(:name => new_name, :values => new_value)
           end
+        else
+          Assignment.new(:name => new_name, :value => new_value)
         end
+
+        declarations[index] = new_node
       end
 
       protected
 
-      def node_for(value)
+      def node_for(value, is_disk=false)
         case value
         when String
-          SingleQuotedString.new :value => value
+          if is_disk
+            Disk.new(SingleQuotedString.new(:value => value))
+          else
+            SingleQuotedString.new :value => value
+          end
         when Integer
           Number.new :value => value
         when Array
-          value.map { |v| node_for(v) }
+          value.map { |v| node_for(v, is_disk) }
         else
           raise "don't know what to do with #{value.class}"
         end

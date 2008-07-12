@@ -24,106 +24,124 @@ end
 describe XenConfigFile::AST::ConfigFile do
 
   before(:each) do
-    @config_file = parsed_ast
+    @config = parsed_ast
   end
 
   it "has a variable for each meaningful line of the file" do
-    @config_file.should have(10).declarations
+    @config.should have(10).declarations
   end
 
   it "has a comment nodes" do
-    @config_file.declarations.first.should be_an_instance_of(XenConfigFile::AST::Comment)
+    @config.declarations.first.should be_an_instance_of(XenConfigFile::AST::Comment)
   end
 
   it "has assignment nodes" do
-    @config_file.declarations[1].should be_an_instance_of(XenConfigFile::AST::Assignment)
+    @config.declarations[1].should be_an_instance_of(XenConfigFile::AST::Assignment)
   end
 
   it "has array assignment nodes" do
-    @config_file.declarations[5].should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
+    @config.declarations[5].should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
   end
 
   it "has a disk array assignment" do
-    @config_file.declarations[6].should be_an_instance_of(XenConfigFile::AST::DiskArrayAssignment)
+    @config.declarations[6].should be_an_instance_of(XenConfigFile::AST::DiskArrayAssignment)
   end
 
   it "has comments" do
-    @config_file.should have(1).comments
-    @config_file.comments.first.should be_an_instance_of(XenConfigFile::AST::Comment)
+    @config.should have(1).comments
+    @config.comments.first.should be_an_instance_of(XenConfigFile::AST::Comment)
   end
 
   describe "#[]" do
 
     it "retrieves the assignment with a name matching the given string" do
-      @config_file["disk"].should == @config_file.declarations[6]
+      @config["disk"].should == @config.declarations[6]
     end
 
     it "returns nil if the named value isn't found" do
-      @config_file["what"].should be_nil
+      @config["what"].should be_nil
     end
 
+  end
+
+  describe "#delete" do
+    it "deletes the node from the declarations with the given name" do
+      lambda { @config.delete("memory") }.should change(@config.declarations, :size).by(-1)
+      @config["memory"].should be_nil
+    end
   end
 
   describe "#[]=" do
-    describe "when assigning to a name that already exists" do
-
-      it "replaces the existing value of the assignment with a single quoted string when assigning a string" do
-        @config_file["name"] = "lol"
-        @config_file["name"].value.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString)
-        @config_file["name"].value.value.should == "lol"
+    describe "when assigning a string" do
+      it "replaces an existing node with an assignment with a single quoted string" do
+        lambda { @config["name"] = "lol" }.should_not change(@config.declarations, :size)
+        @config["name"].value.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString)
+        @config["name"].value.value.should == "lol"
       end
-
-      it "replaces the existing value of the assignment node with a number when assigning a number" do
-        @config_file["memory"] = 123
-        @config_file["memory"].value.should be_an_instance_of(XenConfigFile::AST::Number)
-        @config_file["memory"].value.value.should == 123
+      it "appends a new node if the name doesn't exist" do
+        lambda { @config["what"] = "nooo" }.should change(@config.declarations, :size).by(1)
+        @config["what"].should be_an_instance_of(XenConfigFile::AST::Assignment)
+        @config["what"].value.value.should == "nooo"
       end
-
-      it "replaces the value of the assignment with a new array"
-
-      it "replaces the value of the assignment with new disk nodes if the name is disk"
-
     end
 
-    describe "when assigning to a name that doesn't exist" do
-
-      it "creates a new assignment node with a single quoted string when assigning a string" do
-        lambda do
-          @config_file["thing"] = "stuff"
-        end.should change(@config_file.declarations, :size).by(1)
-        new_node = @config_file.declarations.last
-        new_node.should be_an_instance_of(XenConfigFile::AST::Assignment)
-        new_node.name.should be_an_instance_of(XenConfigFile::AST::StringLiteral)
-        new_node.value.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString)
-        new_node.value.value.should == "stuff"
+    describe "when assigning a number" do
+      it "replaces an existing node with a new number assignment" do
+        lambda { @config["memory"] = 123 }.should_not change(@config.declarations, :size)
+        @config["memory"].value.should be_an_instance_of(XenConfigFile::AST::Number)
+        @config["memory"].value.value.should == 123
       end
-
-      it "creates a new assignment node with a number when assigning a number" do
-        lambda do
-          @config_file["thing"] = 12345
-        end.should change(@config_file.declarations, :size).by(1)
-        new_node = @config_file.declarations.last
-        new_node.should be_an_instance_of(XenConfigFile::AST::Assignment)
-        new_node.name.should be_an_instance_of(XenConfigFile::AST::StringLiteral)
-        new_node.value.should be_an_instance_of(XenConfigFile::AST::Number)
-        new_node.value.value.should == 12345
+      it "appends a new assignment node if the name doesn't exist" do
+        lambda { @config["numba"] = 12345 }.should change(@config.declarations, :size).by(1)
+        @config["numba"].should be_an_instance_of(XenConfigFile::AST::Assignment)
+        @config["numba"].value.value.should == 12345
       end
+    end
 
+    describe "when assigning an array" do
+      it "replaces an existing node with a new array assignment" do
+        lambda { @config["vif"] = %w(foo bar) }.should_not change(@config.declarations, :size)
+        @config["vif"].should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
+        @config["vif"].should have(2).values
+        @config["vif"].values.each { |v| v.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString) }
+        @config["vif"].values.map { |v| v.value }.should == %w(foo bar)
+      end
+      it "appends a new array assignment node for an new name" do
+        lambda { @config["numbaz"] = [1, 2, 3] }.should change(@config.declarations, :size).by(1)
+        @config["numbaz"].should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
+        @config["numbaz"].values.map { |v| v.value }.should == [1, 2, 3]
+      end
+    end
+
+    describe "when assigning to the disk name" do
+      before(:all) do
+        @disk_names = [
+          'phy:/dev/ey02-dedicated02/root-s00250,sda1,w',
+          'phy:/dev/ey02-dedicated02/swap-s00250,sda2,w',
+          'phy:/dev/ey02-dedicated02/indexes-s00250,sda3,w',
+          'phy:/dev/ey02-dedicated02/gfs-00155,sdb1,w!'
+        ]
+      end
+      describe "when the disk already exists" do
+        it "replaces the disks with new disks" do
+          lambda { @config["disk"] = @disk_names }.should_not change(@config.declarations, :size)
+          @config["disk"].should have(4).disks
+          @config["disk"].disks.each { |disk| disk.should be_an_instance_of(XenConfigFile::AST::Disk) }
+        end
+      end
+      describe "when the disk doesn't exist" do
+        before(:each) do
+          @config.delete("disk")
+        end
+        it "adds a new disk node" do
+          lambda { @config["disk"] = @disk_names }.should change(@config.declarations, :size).by(1)
+          @config["disk"].should be_an_instance_of(XenConfigFile::AST::DiskArrayAssignment)
+        end
+      end
     end
 
   end
-  # before(:all) do
-  #   @config = XenConfigFile::AST::ConfigFile.new({:declarations => []})
-  # end
 
-  # describe "[]=" do
-  #   before(:all) do
-  #     @config[:cpu_cap] = 200
-  #   end
-  #   it "should let me fetch the declarations i set" do
-  #     @config[:cpu_cap].should == 200
-  #   end
-  # end
 end
 
 describe XenConfigFile::AST::Comment do
@@ -216,7 +234,6 @@ describe XenConfigFile::AST::Number do
   end
 end
 
-
 describe XenConfigFile::AST::Disk do
   before(:all) do
     @disk = parsed_ast.declarations[6].disks[0]
@@ -235,34 +252,24 @@ describe XenConfigFile::AST::Disk do
     @disk.mode.should == "w"
   end
 
-#   describe "initialize" do
-#     before(:all) do
-#       @disk = XenConfigFile::AST::Disk.new('phy:/dev/ey00-data4/root-s00348', 'sda1', 'w')
-#     end
-#     it "should create successfully" do
-#       @disk.should_not be_nil
-#     end
-#     it "should assign the volume" do
-#       @disk.volume.should == 'phy:/dev/ey00-data4/root-s00348'
-#     end
-#     it "should assign the device" do
-#       @disk.device.should == 'sda1'
-#     end
-#     it "should assign the mode" do
-#       @disk.mode.should == 'w'
-#     end
-#   end
-#
-#   describe "build" do
-#     before(:all) do
-#       @params = ["phy:/dev/ey00-data4/root-s00348,sda1,w", "phy:/dev/ey00-data4/swap-s00348,sda2,w", "phy:/dev/ey00-data4/gfs-00218,sdb1,w!"]
-#       @disks = XenConfigFile::AST::Disk.build({:declarations => [XenConfigFile::AST::ArrayAssignment.new(:disk, @params)]})
-#     end
-#     it "should build successfully" do
-#       @disks.should_not be_nil
-#     end
-#     it "should have three elements" do
-#       @disks.should have(3).entries
-#     end
-#   end
+  describe "when initialized with a string node" do
+    before(:all) do
+      @disk = XenConfigFile::AST::Disk.new(
+        XenConfigFile::AST::SingleQuotedString.new(:value => 'phy:/dev/ey00-data4/root-s00348,sda1,w')
+      )
+    end
+
+    it "sets the volume" do
+      @disk.volume.should == "phy:/dev/ey00-data4/root-s00348"
+    end
+
+    it "sets the device" do
+      @disk.device.should == "sda1"
+    end
+
+    it "sets the mode" do
+      @disk.mode.should == "w"
+    end
+  end
+
 end

@@ -45,7 +45,7 @@ module XenConfigFile
       end
     end
     visits AST::Disk do |disk|
-      "\"#{disk.volume},#{disk.device},#{disk.mode}\""
+      "'#{disk.volume},#{disk.device},#{disk.mode}'"
     end
 
     visits AST::StringLiteral do |str|
