@@ -13,52 +13,110 @@ describe XenConfigFile::AST do
   end
 
   describe XenConfigFile::AST::ConfigFile do
-    it "has variables" do
-      @ast.should have_at_least(8).variables
+    it "has declarations" do
+      @ast.should have_at_least(8).declarations
     end
   end
 
 end
 
-
 describe XenConfigFile::AST::ConfigFile do
 
-  describe "when parsed from a file" do
-    before(:all) do
-      @config_file = parsed_ast
+  before(:each) do
+    @config_file = parsed_ast
+  end
+
+  it "has a variable for each meaningful line of the file" do
+    @config_file.should have(10).declarations
+  end
+
+  it "has a comment nodes" do
+    @config_file.declarations.first.should be_an_instance_of(XenConfigFile::AST::Comment)
+  end
+
+  it "has assignment nodes" do
+    @config_file.declarations[1].should be_an_instance_of(XenConfigFile::AST::Assignment)
+  end
+
+  it "has array assignment nodes" do
+    @config_file.declarations[5].should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
+  end
+
+  it "has a disk array assignment" do
+    @config_file.declarations[6].should be_an_instance_of(XenConfigFile::AST::DiskArrayAssignment)
+  end
+
+  it "has comments" do
+    @config_file.should have(1).comments
+    @config_file.comments.first.should be_an_instance_of(XenConfigFile::AST::Comment)
+  end
+
+  describe "#[]" do
+
+    it "retrieves the assignment with a name matching the given string" do
+      @config_file["disk"].should == @config_file.declarations[6]
     end
 
-    it "has a variable for each meaningful line of the file" do
-      @config_file.should have(10).variables
-    end
-
-    it "has a comment nodes" do
-      @config_file.variables.first.should be_an_instance_of(XenConfigFile::AST::Comment)
-    end
-
-    it "has assignment nodes" do
-      @config_file.variables[1].should be_an_instance_of(XenConfigFile::AST::Assignment)
-    end
-
-    it "has array assignment nodes" do
-      @config_file.variables[5].should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
-    end
-
-    it "has a disk array assignment" do
-      @config_file.variables[6].should be_an_instance_of(XenConfigFile::AST::DiskArrayAssignment)
+    it "returns nil if the named value isn't found" do
+      @config_file["what"].should be_nil
     end
 
   end
 
+  describe "#[]=" do
+    describe "when assigning to a name that already exists" do
+
+      it "replaces the existing value of the assignment with a single quoted string when assigning a string" do
+        @config_file["name"] = "lol"
+        @config_file["name"].value.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString)
+        @config_file["name"].value.value.should == "lol"
+      end
+
+      it "replaces the existing value of the assignment node with a number when assigning a number" do
+        @config_file["memory"] = 123
+        @config_file["memory"].value.should be_an_instance_of(XenConfigFile::AST::Number)
+        @config_file["memory"].value.value.should == 123
+      end
+
+    end
+
+    describe "when assigning to a name that doesn't exist" do
+
+      it "creates a new assignment node with a single quoted string when assigning a string" do
+        lambda do
+          @config_file["thing"] = "stuff"
+        end.should change(@config_file.declarations, :size).by(1)
+        new_node = @config_file.declarations.last
+        new_node.should be_an_instance_of(XenConfigFile::AST::Assignment)
+        new_node.name.should be_an_instance_of(XenConfigFile::AST::StringLiteral)
+        new_node.value.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString)
+        new_node.value.value.should == "stuff"
+      end
+
+      it "creates a new assignment node with a number when assigning a number" do
+        lambda do
+          @config_file["thing"] = 12345
+        end.should change(@config_file.declarations, :size).by(1)
+        new_node = @config_file.declarations.last
+        new_node.should be_an_instance_of(XenConfigFile::AST::Assignment)
+        new_node.name.should be_an_instance_of(XenConfigFile::AST::StringLiteral)
+        new_node.value.should be_an_instance_of(XenConfigFile::AST::Number)
+        new_node.value.value.should == 12345
+      end
+
+    end
+
+  end
+# FIXME (nathan) OK DUDE, PUT BACK THE FULL-ON AST FOR ASSIGNMENTS, DON'T CHINTZ OUT ON THE LITERAL STRING
   # before(:all) do
-  #   @config = XenConfigFile::AST::ConfigFile.new({:variables => []})
+  #   @config = XenConfigFile::AST::ConfigFile.new({:declarations => []})
   # end
 
   # describe "[]=" do
   #   before(:all) do
   #     @config[:cpu_cap] = 200
   #   end
-  #   it "should let me fetch the variables i set" do
+  #   it "should let me fetch the declarations i set" do
   #     @config[:cpu_cap].should == 200
   #   end
   # end
@@ -66,7 +124,7 @@ end
 
 describe XenConfigFile::AST::Comment do
   it "has a value" do
-    comment = parsed_ast.variables.first
+    comment = parsed_ast.declarations.first
     comment.should be_an_instance_of(XenConfigFile::AST::Comment)
     comment.value.should == "  -*- mode: python; -*-"
   end
@@ -74,39 +132,30 @@ end
 
 describe XenConfigFile::AST::Assignment do
   before(:all) do
-    @assignment = parsed_ast.variables[1]
+    @assignment = parsed_ast.declarations[1]
     @assignment.should be_an_instance_of(XenConfigFile::AST::Assignment)
   end
 
-  it "has a name literal" do
+  it "has a name" do
     @assignment.name.should be_an_instance_of(XenConfigFile::AST::StringLiteral)
+    @assignment.name.value.should == "kernel"
   end
 
   it "has a value string" do
     @assignment.value.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString)
   end
 
-  # describe "initialize" do
-  #   before(:all) do
-  #     @ass = XenConfigFile::AST::Assignment.new(:number, 42)
-  #   end
-  #   it "should know its lhs" do
-  #     @ass.lhs.should == :number
-  #   end
-  #   it "should know its rhs" do
-  #     @ass.rhs.should == 42
-  #   end
-  # end
 end
 
 describe XenConfigFile::AST::ArrayAssignment do
   before(:all) do
-    @assignment = parsed_ast.variables[5]
+    @assignment = parsed_ast.declarations[5]
     @assignment.should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
   end
 
-  it "has a name literal" do
+  it "has a name" do
     @assignment.name.should be_an_instance_of(XenConfigFile::AST::StringLiteral)
+    @assignment.name.value.should == "vif"
   end
 
   it "has an array of literals as a value" do
@@ -114,23 +163,17 @@ describe XenConfigFile::AST::ArrayAssignment do
     @assignment.value.each { |item| item.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString) }
   end
 
-  # describe "initialize" do
-  #   before(:all) do
-  #     @ass = XenConfigFile::AST::ArrayAssignment.new(:number, [42, 'forty-two', 666])
-  #   end
-  #   it "should know its lhs" do
-  #     @ass.lhs.should == :number
-  #   end
-  #   it "should know its rhs" do
-  #     @ass.rhs.should == [42, 'forty-two', 666]
-  #   end
-  # end
 end
 
 describe XenConfigFile::AST::DiskArrayAssignment do
   before(:all) do
-    @assignment = parsed_ast.variables[6]
+    @assignment = parsed_ast.declarations[6]
     @assignment.should be_an_instance_of(XenConfigFile::AST::DiskArrayAssignment)
+  end
+
+  it "has a name" do
+    @assignment.name.should be_an_instance_of(XenConfigFile::AST::StringLiteral)
+    @assignment.name.value.should == "disk"
   end
 
   it "has an array of disks" do
@@ -139,26 +182,9 @@ describe XenConfigFile::AST::DiskArrayAssignment do
   end
 end
 
-describe XenConfigFile::AST::StringLiteral do
-  before(:all) do
-    @literal = parsed_ast.variables[5].name
-    @literal.should be_an_instance_of(XenConfigFile::AST::StringLiteral)
-  end
-
-  it "has a value" do
-    @literal.value.should == "vif"
-  end
-
-  # describe "initialize" do
-  #   before(:all) do
-  #     @str = XenConfigFile::AST::LiteralString.new('foo')
-  #   end
-  # end
-end
-
 describe XenConfigFile::AST::SingleQuotedString do
   before(:all) do
-    @string = parsed_ast.variables[1].value
+    @string = parsed_ast.declarations[1].value
     @string.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString)
   end
   it "has a value" do
@@ -168,7 +194,7 @@ end
 
 describe XenConfigFile::AST::DoubleQuotedString do
   before(:all) do
-    @string = parsed_ast.variables[4].value
+    @string = parsed_ast.declarations[4].value
     @string.should be_an_instance_of(XenConfigFile::AST::DoubleQuotedString)
   end
   it "has a value" do
@@ -178,7 +204,7 @@ end
 
 describe XenConfigFile::AST::Number do
   before(:all) do
-    @number = parsed_ast.variables[2].value
+    @number = parsed_ast.declarations[2].value
     @number.should be_an_instance_of(XenConfigFile::AST::Number)
   end
   it "has a value" do
@@ -189,7 +215,7 @@ end
 
 describe XenConfigFile::AST::Disk do
   before(:all) do
-    @disk = parsed_ast.variables[6].disks[0]
+    @disk = parsed_ast.declarations[6].disks[0]
     @disk.should be_an_instance_of(XenConfigFile::AST::Disk)
   end
 
@@ -226,7 +252,7 @@ describe XenConfigFile::AST::Disk do
 #   describe "build" do
 #     before(:all) do
 #       @params = ["phy:/dev/ey00-data4/root-s00348,sda1,w", "phy:/dev/ey00-data4/swap-s00348,sda2,w", "phy:/dev/ey00-data4/gfs-00218,sdb1,w!"]
-#       @disks = XenConfigFile::AST::Disk.build({:variables => [XenConfigFile::AST::ArrayAssignment.new(:disk, @params)]})
+#       @disks = XenConfigFile::AST::Disk.build({:declarations => [XenConfigFile::AST::ArrayAssignment.new(:disk, @params)]})
 #     end
 #     it "should build successfully" do
 #       @disks.should_not be_nil

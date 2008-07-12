@@ -2,19 +2,50 @@ module XenConfigFile
   module AST
     include Treehouse::NodeDefinition
 
-    node :config_file, :variables => :elements
+    node :config_file, :declarations => :elements do
+      def comments
+        declarations.select { |v| v.kind_of? Comment }
+      end
+
+      def [](name)
+        declarations.detect do |declaration|
+          ( declaration.kind_of?(Assignment) ||
+            declaration.kind_of?(ArrayAssignment) ||
+            declaration.kind_of?(DiskArrayAssignment)
+          ) && declaration.name.value == name
+        end
+      end
+
+      def []=(name, value)
+        new_value =
+          case value
+          when String
+            SingleQuotedString.new(:value => value)
+          when Integer
+            Number.new(:value => value)
+          end
+
+        if self[name]
+          self[name].value = new_value
+        else
+          new_name = StringLiteral.new(:value => name)
+          declarations << Assignment.new(:name => new_name, :value => new_value)
+        end
+      end
+
+    end
 
     node :comment, :value => lambda { |node| node.value.text_value }
     node :assignment, :name, :value
     node :array_assignment, :name, :value
-    node :disk_array_assignment, :disks
+    node :disk_array_assignment, :name, :disks
 
     node :disk do
       attr_reader :volume, :device, :mode
 
       # override the default initialize with a custom initialize that takes a string literal instead
-      def initialize(string_literal)
-        @volume, @device, @mode = string_literal.value.split(",")
+      def initialize(string_node)
+        @volume, @device, @mode = string_node.value.split(",")
       end
 
     end
@@ -24,100 +55,5 @@ module XenConfigFile
     node :double_quoted_string, :value => lambda { |node| node.elements[1].text_value }
     node :number, :value => lambda { |node| node.text_value.to_i }
 
-    # # base class for hooking children nodes up
-    # class Base
-    #   def accept(visitor); visitor.visit(self) end
-    # end
-    # 
-    # # what you get back from simple_parse
-    # class ConfigFile < Base
-    #   attr_accessor :disks, :vars, :comments
-    #   def initialize(contents)
-    #     @vars = [ ]
-    #     @comments = contents.delete(:comments)
-    #     @disks = ArrayAssignment.new(:disk, Disk.build(contents))
-    #     contents[:variables] << @disks
-    # 
-    #     contents[:variables].each do |var|
-    #       @vars << var
-    #     end
-    #   end
-    # 
-    #   # convenience to checkout a params value
-    #   def [](key)
-    #     @vars.detect { |v| v.lhs == key }.rhs rescue nil
-    #   end
-    # 
-    #   # set variables in existing ASTs with this
-    #   def []=(key, value)
-    #     @vars << if value.kind_of?(Array)
-    #       ArrayAssignment.new(key, value.collect { |v| v.kind_of?(String) ? LiteralString.new(v) : LiteralNumber.new(v) })
-    #     else
-    #       Assignment.new(key, value.kind_of?(String) ? LiteralString.new(value) : LiteralNumber.new(value))
-    #     end
-    #   end
-    # end
-    # 
-    # # disks associated with the image
-    # class Disk < Base
-    #   attr_accessor :volume, :device, :mode
-    # 
-    #   def self.build(contents)
-    #     disks = contents[:variables].detect { |var| var.lhs == :disk }
-    #     unless disks.nil?
-    #       contents[:variables].delete(disks)
-    # 
-    #       disks.rhs.map do |disk|
-    #         volume, device, mode = disk.split(/,/)
-    #         new(volume, device, mode)
-    #       end unless disks.rhs.nil?
-    #     end
-    #   end
-    # 
-    #   def initialize(volume, device, mode)
-    #     @volume, @device, @mode = volume, device, mode
-    #   end
-    # end
-    # 
-    # # lhs is the param name, rhs is a literal string or literal number
-    # class Assignment < Base
-    #   attr_accessor :lhs, :rhs
-    #   def initialize(lhs, rhs)
-    #     @lhs, @rhs = lhs, rhs
-    #   end
-    # end
-    # 
-    # # lhs is the param name, rhs is an array of literal strings or number
-    # class ArrayAssignment < Assignment
-    # end
-    # 
-    # # internal representation of a string
-    # class LiteralString < Base
-    #   attr_accessor :value
-    #   def initialize(value)
-    #     @value = value
-    #   end
-    #   def ==(value)
-    #     if value.kind_of?LiteralString
-    #       @value == value.value
-    #     else
-    #       @value == value
-    #     end
-    #   end
-    #   def split(pattern)
-    #     @value.split(pattern)
-    #   end
-    # end
-    # 
-    # # internal representation of a whole number
-    # class LiteralNumber < Base
-    #   attr_accessor :value
-    #   def initialize(value)
-    #     @value = value
-    #   end
-    #   def ==(value)
-    #     @value == value
-    #   end
-    # end
   end
 end
