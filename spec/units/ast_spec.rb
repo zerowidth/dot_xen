@@ -1,6 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
-def parsed_ast(string = File.read(File.dirname(__FILE__)+'/../fixtures/ey00-s00348.xen'))
+def parsed_ast
+  string = File.read(File.dirname(__FILE__)+'/../fixtures/ey00-s00348.xen')
   XenConfigFile::Parser.new.simple_parse(string)
 end
 
@@ -160,7 +161,7 @@ describe XenConfigFile::AST::ArrayAssignment do
 
   it "has an array of literals as a value" do
     @assignment.should have(1).value
-    @assignment.value.each { |item| item.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString) }
+    @assignment.values.each { |item| item.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString) }
   end
 
 end

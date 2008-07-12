@@ -37,7 +37,7 @@ module XenConfigFile
 
     node :comment, :value => lambda { |node| node.value.text_value }
     node :assignment, :name, :value
-    node :array_assignment, :name, :value
+    node :array_assignment, :name, :values
     node :disk_array_assignment, :name, :disks
 
     node :disk do
