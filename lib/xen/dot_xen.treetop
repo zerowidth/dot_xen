@@ -36,12 +36,12 @@ module XenConfigFile
     end
 
     # note the pass-through, a variable node is never instantiated as a part of the treehouse AST,
-    # so either the node needs to know how to "pass through" to the underlying value via build
+    # so either the node needs to know how to get to to the underlying value via build
     # using an inline definition as you see here, or the lhs/rhs of a variable's parent node
     # can be defined with a lambda to do the pass-through there, e.g.
     #   node :array_assignment, :rhs, :lhs => lambda { |node| node.lhs.value.build }
     # In this case, the inline build is simpler than remembering in the AST node definitions where
-    # variables are expected as children.
+    # variables are expected as children everywhere they're used
     rule variable
       space_no_newline* value:number space* comment* {
         def build

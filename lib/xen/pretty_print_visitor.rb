@@ -23,7 +23,7 @@ module XenConfigFile
         assignment.values.each do |value|
           buf << " "*str.size << visit(value) << ",\n"
         end
-        buf << " "*str.size << "]"
+        buf << " "*(str.size-2) << "]"
         str << buf << "\n"
       else
         "#{visit(assignment.name)} = [ #{visit(assignment.values.first)} ]\n"

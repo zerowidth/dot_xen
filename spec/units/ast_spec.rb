@@ -79,6 +79,10 @@ describe XenConfigFile::AST::ConfigFile do
         @config_file["memory"].value.value.should == 123
       end
 
+      it "replaces the value of the assignment with a new array"
+
+      it "replaces the value of the assignment with new disk nodes if the name is disk"
+
     end
 
     describe "when assigning to a name that doesn't exist" do
@@ -108,7 +112,6 @@ describe XenConfigFile::AST::ConfigFile do
     end
 
   end
-# FIXME (nathan) OK DUDE, PUT BACK THE FULL-ON AST FOR ASSIGNMENTS, DON'T CHINTZ OUT ON THE LITERAL STRING
   # before(:all) do
   #   @config = XenConfigFile::AST::ConfigFile.new({:declarations => []})
   # end

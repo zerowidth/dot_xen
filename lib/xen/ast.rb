@@ -17,19 +17,32 @@ module XenConfigFile
       end
 
       def []=(name, value)
-        new_value =
-          case value
-          when String
-            SingleQuotedString.new(:value => value)
-          when Integer
-            Number.new(:value => value)
-          end
+        new_value = node_for(value)
 
         if self[name]
           self[name].value = new_value
         else
           new_name = StringLiteral.new(:value => name)
-          declarations << Assignment.new(:name => new_name, :value => new_value)
+          if value.kind_of?(Array)
+            declarations << ArrayAssignment.new(:name => new_name, :values => new_value)
+          else
+            declarations << Assignment.new(:name => new_name, :value => new_value)
+          end
+        end
+      end
+
+      protected
+
+      def node_for(value)
+        case value
+        when String
+          SingleQuotedString.new :value => value
+        when Integer
+          Number.new :value => value
+        when Array
+          value.map { |v| node_for(v) }
+        else
+          raise "don't know what to do with #{value.class}"
         end
       end
 
