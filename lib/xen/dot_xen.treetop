@@ -5,22 +5,55 @@ module XenConfigFile
     end
 
     rule assignment
-      space_no_newline* lhs:variable space_no_newline* '=' space_no_newline* rhs:variable space* comment* <AST.create_node(:assignment)>
+      space_no_newline* name:variable space_no_newline* '=' space_no_newline* value:variable space* comment* <AST.create_node(:assignment)>
       /
-      space_no_newline* lhs:variable space_no_newline* '=' space_no_newline* '[' space* rhs:array_list space* ']' space* comment* <AST.create_node(:array_assignment)>
+      space_no_newline* "disk" space_no_newline* '=' space_no_newline* '[' space* disks:disk_array_list space* ']' space* comment* <AST.create_node(:disk_array_assignment)>
+      /
+      space_no_newline* name:variable space_no_newline* '=' space_no_newline* '[' space* value:array_list space* ']' space* comment* <AST.create_node(:array_assignment)>
     end
 
+    # need to define build inline since it's a recursive rule
+    # TODO reexamine the requirements for ,'s and inline comments
     rule array_list
-      space* value:(variable/comment) ','? space* remains:(space* var:array_list space* ','?)* <AST.create_node(:array_list)> {
+      space* value:(variable/comment) ','? space* remains:(space* list:array_list space* ','?)* {
         def build
-          [value.build] + remains.elements.map { |command_and_var|  command_and_var.var.build }
+          ([value.build] + remains.elements.map { |e| e.list.build }).flatten
         end
       }
     end
 
+    # have to be careful with the recursive building of nodes -- each list gets iterated over list.size times
+    # maybe there's a better way to define lists of disks? 
+    # TODO why not parse the volume/device/mode here?
+    rule disk_array_list
+      space* value:(variable/comment) ','? space* remains:(space* list:disk_array_list space* ','?)* {
+        def build
+          ([value.build] + remains.elements.map { |e| e.list.build }).flatten.map do |literal|
+            literal.instance_of?(AST::Disk) ? literal : AST::Disk.new(literal)
+          end
+        end
+      }
+    end
+
+    # note the pass-through, a variable node is never instantiated as a part of the treehouse AST,
+    # so either the node needs to know how to "pass through" to the underlying value via build
+    # using an inline definition as you see here, or the lhs/rhs of a variable's parent node
+    # can be defined with a lambda to do the pass-through there, e.g.
+    #   node :array_assignment, :rhs, :lhs => lambda { |node| node.lhs.value.build }
+    # In this case, the inline build is simpler than remembering in the AST node definitions where
+    # variables are expected as children.
     rule variable
-      space_no_newline* value:number space* comment* <AST.create_node(:variable)> /
-      space_no_newline* value:string space* comment* <AST.create_node(:variable)>
+      space_no_newline* value:number space* comment* {
+        def build
+          value.build
+        end
+      }
+      /
+      space_no_newline* value:string space* comment* {
+        def build
+          value.build
+        end
+      }
     end
 
     rule number
@@ -34,7 +67,7 @@ module XenConfigFile
     end
 
     rule comment
-      space_no_newline* [!\#] value:([^\n])* "\n" space* <AST.create_node(:comment)>
+      space_no_newline* '#' value:([^\n])* "\n" <AST.create_node(:comment)>
     end
 
     rule blank_line

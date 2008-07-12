@@ -2,17 +2,27 @@ module XenConfigFile
   module AST
     include Treehouse::NodeDefinition
 
-    node :config_file
-    node :assignment
-    node :array_assignment
-    node :comment
-    node :string_literal
-    node :single_quoted_string
-    node :double_quoted_string
-    node :variable
-    node :assignment
-    node :number
-    node :array_list
+    node :config_file, :variables => :elements
+
+    node :comment, :value => lambda { |node| node.value.text_value }
+    node :assignment, :name, :value
+    node :array_assignment, :name, :value
+    node :disk_array_assignment, :disks
+
+    node :disk do
+      attr_reader :volume, :device, :mode
+
+      # override the default initialize with a custom initialize that takes a string literal instead
+      def initialize(string_literal)
+        @volume, @device, @mode = string_literal.value.split(",")
+      end
+
+    end
+
+    node :string_literal, :value => :text_value
+    node :single_quoted_string, :value => lambda { |node| node.elements[1].text_value }
+    node :double_quoted_string, :value => lambda { |node| node.elements[1].text_value }
+    node :number, :value => lambda { |node| node.text_value.to_i }
 
     # # base class for hooking children nodes up
     # class Base
