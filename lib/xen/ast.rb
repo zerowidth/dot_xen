@@ -23,12 +23,8 @@ module XenConfigFile
         index = self[name] ? declarations.index(self[name]) : declarations.size
 
         new_value = node_for(value, name=="disk")
-        new_node = if value.kind_of?(Array)
-          if name == "disk"
-            DiskArrayAssignment.new(:name => name, :disks => new_value)
-          else
-            ArrayAssignment.new(:name => name, :values => new_value)
-          end
+        new_node = if value.kind_of?(Array) && name == "disk"
+          DiskArrayAssignment.new(:name => name, :disks => new_value)
         else
           Assignment.new(:name => name, :value => new_value)
         end
@@ -60,7 +56,6 @@ module XenConfigFile
     # FIXME (nathan) :value => :value should automatically assume text_value unless it responds to #build
     node :comment, :value => lambda { |node| node.value.text_value }
     node :assignment, :name, :value
-    node :array_assignment, :name, :values
     node :disk_array_assignment, :name, :disks
 
     node :disk do

@@ -74,7 +74,7 @@ module XenConfigFile
         elements[1]
       end
 
-      def values
+      def value
         elements[7]
       end
 
@@ -465,7 +465,7 @@ module XenConfigFile
             end
           end
           if s37.last
-            r37 = (AST.create_node(:array_assignment)).new(input, i37...index, s37)
+            r37 = (AST.create_node(:assignment)).new(input, i37...index, s37)
             r37.extend(Assignment2)
           else
             self.index = i37
@@ -493,7 +493,7 @@ module XenConfigFile
     end
 
     module ArrayList1
-      def values
+      def value
         elements[1]
       end
 
@@ -503,9 +503,9 @@ module XenConfigFile
     end
 
     module ArrayList2
-      # FIXME (nathan) automate this (:recursive => true flag?)
+      # FIXME (nathan) automate this (:recursive => :list) # expect "remains"
       def build
-        ([values.build] + remains.elements.map { |e| e.list.build }).flatten
+        ([value.build] + remains.elements.map { |e| e.list.build }).flatten
       end
     end
 

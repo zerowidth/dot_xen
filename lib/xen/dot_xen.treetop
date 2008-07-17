@@ -9,16 +9,16 @@ module XenConfigFile
       /
       space_no_newline* &"disk" name:variable space_no_newline* '=' space_no_newline* '[' space* disks:disk_array_list space* ']' space* comment* <AST.create_node(:disk_array_assignment)>
       /
-      space_no_newline* name:variable space_no_newline* '=' space_no_newline* '[' space* values:array_list space* ']' space* comment* <AST.create_node(:array_assignment)>
+      space_no_newline* name:variable space_no_newline* '=' space_no_newline* '[' space* value:array_list space* ']' space* comment* <AST.create_node(:assignment)>
     end
 
     # need to define build inline since it's a recursive rule
     # TODO reexamine the requirements for ,'s and inline comments
     rule array_list
-      space* values:(variable/comment) ','? space* remains:(space* list:array_list space* ','?)* {
-        # FIXME (nathan) automate this (:recursive => true flag?)
+      space* value:(variable/comment) ','? space* remains:(space* list:array_list space* ','?)* {
+        # FIXME (nathan) automate this (:recursive => :list) # expect "remains"
         def build
-          ([values.build] + remains.elements.map { |e| e.list.build }).flatten
+          ([value.build] + remains.elements.map { |e| e.list.build }).flatten
         end
       }
     end

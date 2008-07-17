@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
-def parsed_ast
-  string = File.read(File.dirname(__FILE__)+'/../fixtures/ey00-s00348.xen')
+def parsed_ast(string = nil)
+  string ||= File.read(File.dirname(__FILE__)+'/../fixtures/ey00-s00348.xen')
   XenConfigFile::GrammarParser.new.simple_parse(string)
 end
 
@@ -9,13 +9,9 @@ end
 describe XenConfigFile::AST do
   include XenConfigFile::AST
 
-  before(:all) do
-    @ast = XenConfigFile::GrammarParser.new.simple_parse(File.read(File.dirname(__FILE__)+'/../fixtures/ey00-s00348.xen'))
-  end
-
   describe XenConfigFile::AST::ConfigFile do
     it "has declarations" do
-      @ast.should have_at_least(8).declarations
+      parsed_ast.should have_at_least(8).declarations
     end
   end
 
@@ -37,10 +33,6 @@ describe XenConfigFile::AST::ConfigFile do
 
   it "has assignment nodes" do
     @config.declarations[1].should be_an_instance_of(XenConfigFile::AST::Assignment)
-  end
-
-  it "has array assignment nodes" do
-    @config.declarations[5].should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
   end
 
   it "has a disk array assignment" do
@@ -99,13 +91,13 @@ describe XenConfigFile::AST::ConfigFile do
     describe "when assigning an array" do
       it "replaces an existing node with a new array assignment" do
         lambda { @config["vif"] = %w(foo bar) }.should_not change(@config.declarations, :size)
-        @config["vif"].should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
-        @config["vif"].values.should == %w(foo bar)
+        @config["vif"].should be_an_instance_of(XenConfigFile::AST::Assignment)
+        @config["vif"].value.should == %w(foo bar)
       end
-      it "appends a new array assignment node for an new name" do
+      it "appends a new assignment node for an new name" do
         lambda { @config["numbaz"] = [1, 2, 3] }.should change(@config.declarations, :size).by(1)
-        @config["numbaz"].should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
-        @config["numbaz"].values.should == [1, 2, 3]
+        @config["numbaz"].should be_an_instance_of(XenConfigFile::AST::Assignment)
+        @config["numbaz"].value.should == [1, 2, 3]
       end
     end
 
@@ -149,8 +141,8 @@ describe XenConfigFile::AST::Comment do
 end
 
 describe XenConfigFile::AST::Assignment do
-  before(:all) do
-    @assignment = parsed_ast.declarations[1]
+  before(:each) do
+    @assignment = parsed_ast("kernel = '/boot/vmlinuz-2.6.18-xenU'").declarations.first
     @assignment.should be_an_instance_of(XenConfigFile::AST::Assignment)
   end
 
@@ -162,21 +154,20 @@ describe XenConfigFile::AST::Assignment do
     @assignment.value.should == '/boot/vmlinuz-2.6.18-xenU'
   end
 
-end
+  describe "with an array on the right-hand side" do
+    before(:each) do
+      @ast = parsed_ast("foo = [1, 2, 3]").declarations.first
+      @ast.should be_an_instance_of(XenConfigFile::AST::Assignment)
+    end
 
-describe XenConfigFile::AST::ArrayAssignment do
-  before(:all) do
-    @assignment = parsed_ast.declarations[5]
-    @assignment.should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
-  end
+    it "has a name" do
+      @ast.name.should == "foo"
+    end
 
-  it "has a name" do
-    @assignment.name.should == "vif"
-  end
+    it "has a value" do
+      @ast.value.should == [1, 2, 3]
+    end
 
-  it "has an array of literals as a value" do
-    @assignment.should have(1).value
-    @assignment.values.each { |item| item.should be_an_instance_of(String) }
   end
 
 end

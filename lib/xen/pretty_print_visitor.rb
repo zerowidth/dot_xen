@@ -8,31 +8,38 @@ module XenConfigFile
       end
       str
     end
+
     visits AST::Comment do |comment|
       "##{comment.value}\n"
     end
+
     visits AST::Assignment do |assignment|
-      "#{assignment.name} = #{visit(assignment.value)}\n"
+      "#{assignment.name} = #{visit(assignment.value, assignment.name.length)}\n"
     end
-    visits AST::ArrayAssignment do |assignment|
-      if assignment.values.size == 0 || assignment.values.nil?
+
+    visits Array do |values, lhs_length|
+      lhs_length += 5 # include the " = " and indent 2 more
+      if values.size == 0
         ""
-      elsif assignment.values.size > 1
-        str = "#{assignment.name} = [\n"
-        buf = ""
-        assignment.values.each do |value|
-          buf << " "*str.size << visit(value) << ",\n"
-        end
-        buf << " "*(str.size-2) << "]"
-        str << buf << "\n"
+      elsif values.size == 1
+        "[ #{visit(values.first)} ]"
       else
-        "#{assignment.name} = [ #{visit(assignment.values.first)} ]\n"
+        str = "[\n"
+        buf = ""
+        values.each do |value|
+          buf << " "*lhs_length << visit(value) << ",\n"
+        end
+        buf << " "*(lhs_length-2) << "]"
+        str << buf << ""
       end
     end
+
     visits AST::DiskArrayAssignment do |assignment|
       if assignment.disks.size == 0 || assignment.disks.nil?
         ""
-      elsif assignment.disks.size > 1
+      elsif assignment.disks.size == 1
+        "#{assignment.lhs} = [ #{visit(assignment.disks[0])} ]"
+      else
         str = "#{assignment.name} = [\n"
         buf = ""
         assignment.disks.each do |value|
@@ -40,18 +47,18 @@ module XenConfigFile
         end
         buf << " "*(str.size-2) << "]"
         str << buf << "\n"
-      else
-        "#{assignment.lhs} = [ #{visit(assignment.disks.first)} ]\n"
       end
     end
+
     visits AST::Disk do |disk|
       "'#{disk.volume},#{disk.device},#{disk.mode}'"
     end
 
-    visits String do |str|
+    visits String do |str, _|
       "'" + str + "'" # TODO add in ' quoting if necessary, or switch to "'s
     end
-    visits Fixnum do |int|
+
+    visits Fixnum do |int, _|
       int.to_s
     end
 
