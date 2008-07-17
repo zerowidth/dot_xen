@@ -16,6 +16,7 @@ module XenConfigFile
     # TODO reexamine the requirements for ,'s and inline comments
     rule array_list
       space* values:(variable/comment) ','? space* remains:(space* list:array_list space* ','?)* {
+        # FIXME (nathan) automate this (:recursive => true flag?)
         def build
           ([values.build] + remains.elements.map { |e| e.list.build }).flatten
         end
@@ -23,10 +24,11 @@ module XenConfigFile
     end
 
     # have to be careful with the recursive building of nodes -- each list gets iterated over list.size times
-    # maybe there's a better way to define lists of disks? 
+    # maybe there's a better way to define lists of disks?
     # TODO why not parse the volume/device/mode here?
     rule disk_array_list
       space* values:(variable/comment) ','? space* remains:(space* list:disk_array_list space* ','?)* {
+        # FIXME (nathan) automate this for arrays
         def build
           ([values.build] + remains.elements.map { |e| e.list.build }).flatten.map do |literal|
             literal.instance_of?(AST::Disk) ? literal : AST::Disk.new(literal)
@@ -57,13 +59,31 @@ module XenConfigFile
     end
 
     rule number
-      [0-9]+ <AST.create_node(:number)>
+      [0-9]+ {
+        def build
+          text_value.to_i
+        end
+      }
     end
 
     rule string
-      ([A-Za-z_-])+ <AST.create_node(:string_literal)> /
-      '"' (!'"' . / '\"')* '"' <AST.create_node(:double_quoted_string)> /
-      "'" (!"'" .)* "'" <AST.create_node(:single_quoted_string)>
+      ([A-Za-z_-])+ {
+        def build
+          text_value
+        end
+      }
+      /
+      '"' (!'"' . / '\"')* '"' {
+        def build
+          elements[1].text_value
+        end
+      }
+      /
+      "'" (!"'" .)* "'" {
+        def build
+          elements[1].text_value
+        end
+      }
     end
 
     rule comment
@@ -72,10 +92,6 @@ module XenConfigFile
 
     rule blank_line
       "\n"
-    end
-
-    rule non_space_char
-      ![ \n] .
     end
 
     rule space_no_newline

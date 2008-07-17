@@ -48,7 +48,7 @@ task :make_spec do
   end
 end
 
-task :default => ['spec:run']
+task :default => ['spec:doc']
 namespace :spec do
   Spec::Rake::SpecTask.new('run') do |t|
     t.spec_files = FileList['spec/**/**/*.rb']
@@ -57,7 +57,7 @@ namespace :spec do
   desc "Generate specdocs for examples for inclusion in RDoc"
   Spec::Rake::SpecTask.new('doc') do |t|
     t.spec_files = FileList['spec/**/**/*.rb']
-    t.spec_opts = ["--format", "specdoc", "--color"]
+    t.spec_opts = ["--format", "specdoc", "--color", "--diff", "unified"]
   end
 end
 

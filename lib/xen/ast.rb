@@ -15,24 +15,22 @@ module XenConfigFile
 
       def [](name)
         declarations.detect do |declaration|
-          declaration.respond_to?(:name) && declaration.name.value == name
+          declaration.respond_to?(:name) && declaration.name == name
         end
       end
 
       def []=(name, value)
-        new_name = StringLiteral.new(:value => name)
-
         index = self[name] ? declarations.index(self[name]) : declarations.size
 
         new_value = node_for(value, name=="disk")
         new_node = if value.kind_of?(Array)
           if name == "disk"
-            DiskArrayAssignment.new(:name => new_name, :disks => new_value)
+            DiskArrayAssignment.new(:name => name, :disks => new_value)
           else
-            ArrayAssignment.new(:name => new_name, :values => new_value)
+            ArrayAssignment.new(:name => name, :values => new_value)
           end
         else
-          Assignment.new(:name => new_name, :value => new_value)
+          Assignment.new(:name => name, :value => new_value)
         end
 
         declarations[index] = new_node
@@ -44,12 +42,12 @@ module XenConfigFile
         case value
         when String
           if is_disk
-            Disk.new(SingleQuotedString.new(:value => value))
+            Disk.new(value)
           else
-            SingleQuotedString.new :value => value
+            value
           end
         when Integer
-          Number.new :value => value
+          value
         when Array
           value.map { |v| node_for(v, is_disk) }
         else
@@ -59,6 +57,7 @@ module XenConfigFile
 
     end
 
+    # FIXME (nathan) :value => :value should automatically assume text_value unless it responds to #build
     node :comment, :value => lambda { |node| node.value.text_value }
     node :assignment, :name, :value
     node :array_assignment, :name, :values
@@ -68,16 +67,11 @@ module XenConfigFile
       attr_reader :volume, :device, :mode
 
       # override the default initialize with a custom initialize that takes a string literal instead
-      def initialize(string_node)
-        @volume, @device, @mode = string_node.value.split(",")
+      def initialize(string)
+        @volume, @device, @mode = string.split(",")
       end
 
     end
-
-    node :string_literal, :value => :text_value
-    node :single_quoted_string, :value => lambda { |node| node.elements[1].text_value }
-    node :double_quoted_string, :value => lambda { |node| node.elements[1].text_value }
-    node :number, :value => lambda { |node| node.text_value.to_i }
 
   end
 end

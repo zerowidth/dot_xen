@@ -19,7 +19,7 @@ describe XenConfigFile::GrammarParser do
     def self.has_the_same(name)
       it "has the same #{name} value" do
         @reparsed[name].should_not be_nil
-        @reparsed[name].value.value.should == @parsed[name].value.value
+        @reparsed[name].value.should == @parsed[name].value
       end
     end
 

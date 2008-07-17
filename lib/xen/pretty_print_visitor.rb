@@ -12,13 +12,13 @@ module XenConfigFile
       "##{comment.value}\n"
     end
     visits AST::Assignment do |assignment|
-      "#{visit(assignment.name)} = #{visit(assignment.value)}\n"
+      "#{assignment.name} = #{visit(assignment.value)}\n"
     end
     visits AST::ArrayAssignment do |assignment|
       if assignment.values.size == 0 || assignment.values.nil?
         ""
       elsif assignment.values.size > 1
-        str = "#{visit(assignment.name)} = [\n"
+        str = "#{assignment.name} = [\n"
         buf = ""
         assignment.values.each do |value|
           buf << " "*str.size << visit(value) << ",\n"
@@ -26,14 +26,14 @@ module XenConfigFile
         buf << " "*(str.size-2) << "]"
         str << buf << "\n"
       else
-        "#{visit(assignment.name)} = [ #{visit(assignment.values.first)} ]\n"
+        "#{assignment.name} = [ #{visit(assignment.values.first)} ]\n"
       end
     end
     visits AST::DiskArrayAssignment do |assignment|
       if assignment.disks.size == 0 || assignment.disks.nil?
         ""
       elsif assignment.disks.size > 1
-        str = "#{visit(assignment.name)} = [\n"
+        str = "#{assignment.name} = [\n"
         buf = ""
         assignment.disks.each do |value|
           buf << " "*str.size << visit(value) << ",\n"
@@ -48,17 +48,12 @@ module XenConfigFile
       "'#{disk.volume},#{disk.device},#{disk.mode}'"
     end
 
-    visits AST::StringLiteral do |str|
-      "#{str.value}"
+    visits String do |str|
+      "'" + str + "'" # TODO add in ' quoting if necessary, or switch to "'s
     end
-    visits AST::SingleQuotedString do |str|
-      "'#{str.value}'"
+    visits Fixnum do |int|
+      int.to_s
     end
-    visits AST::DoubleQuotedString do |str|
-      "\"#{str.value}\""
-    end
-    visits AST::Number do |number|
-      "#{number.value}"
-    end
+
   end
 end

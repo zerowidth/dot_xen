@@ -75,26 +75,24 @@ describe XenConfigFile::AST::ConfigFile do
     describe "when assigning a string" do
       it "replaces an existing node with an assignment with a single quoted string" do
         lambda { @config["name"] = "lol" }.should_not change(@config.declarations, :size)
-        @config["name"].value.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString)
-        @config["name"].value.value.should == "lol"
+        @config["name"].value.should == "lol"
       end
       it "appends a new node if the name doesn't exist" do
         lambda { @config["what"] = "nooo" }.should change(@config.declarations, :size).by(1)
         @config["what"].should be_an_instance_of(XenConfigFile::AST::Assignment)
-        @config["what"].value.value.should == "nooo"
+        @config["what"].value.should == "nooo"
       end
     end
 
     describe "when assigning a number" do
       it "replaces an existing node with a new number assignment" do
         lambda { @config["memory"] = 123 }.should_not change(@config.declarations, :size)
-        @config["memory"].value.should be_an_instance_of(XenConfigFile::AST::Number)
-        @config["memory"].value.value.should == 123
+        @config["memory"].value.should == 123
       end
       it "appends a new assignment node if the name doesn't exist" do
         lambda { @config["numba"] = 12345 }.should change(@config.declarations, :size).by(1)
         @config["numba"].should be_an_instance_of(XenConfigFile::AST::Assignment)
-        @config["numba"].value.value.should == 12345
+        @config["numba"].value.should == 12345
       end
     end
 
@@ -102,14 +100,12 @@ describe XenConfigFile::AST::ConfigFile do
       it "replaces an existing node with a new array assignment" do
         lambda { @config["vif"] = %w(foo bar) }.should_not change(@config.declarations, :size)
         @config["vif"].should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
-        @config["vif"].should have(2).values
-        @config["vif"].values.each { |v| v.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString) }
-        @config["vif"].values.map { |v| v.value }.should == %w(foo bar)
+        @config["vif"].values.should == %w(foo bar)
       end
       it "appends a new array assignment node for an new name" do
         lambda { @config["numbaz"] = [1, 2, 3] }.should change(@config.declarations, :size).by(1)
         @config["numbaz"].should be_an_instance_of(XenConfigFile::AST::ArrayAssignment)
-        @config["numbaz"].values.map { |v| v.value }.should == [1, 2, 3]
+        @config["numbaz"].values.should == [1, 2, 3]
       end
     end
 
@@ -159,12 +155,11 @@ describe XenConfigFile::AST::Assignment do
   end
 
   it "has a name" do
-    @assignment.name.should be_an_instance_of(XenConfigFile::AST::StringLiteral)
-    @assignment.name.value.should == "kernel"
+    @assignment.name.should == "kernel"
   end
 
-  it "has a value string" do
-    @assignment.value.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString)
+  it "has a value" do
+    @assignment.value.should == '/boot/vmlinuz-2.6.18-xenU'
   end
 
 end
@@ -176,13 +171,12 @@ describe XenConfigFile::AST::ArrayAssignment do
   end
 
   it "has a name" do
-    @assignment.name.should be_an_instance_of(XenConfigFile::AST::StringLiteral)
-    @assignment.name.value.should == "vif"
+    @assignment.name.should == "vif"
   end
 
   it "has an array of literals as a value" do
     @assignment.should have(1).value
-    @assignment.values.each { |item| item.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString) }
+    @assignment.values.each { |item| item.should be_an_instance_of(String) }
   end
 
 end
@@ -194,43 +188,12 @@ describe XenConfigFile::AST::DiskArrayAssignment do
   end
 
   it "has a name" do
-    @assignment.name.should be_an_instance_of(XenConfigFile::AST::StringLiteral)
-    @assignment.name.value.should == "disk"
+    @assignment.name.should == "disk"
   end
 
   it "has an array of disks" do
     @assignment.should have(3).disks
     @assignment.disks.each { |disk| disk.should be_an_instance_of(XenConfigFile::AST::Disk)}
-  end
-end
-
-describe XenConfigFile::AST::SingleQuotedString do
-  before(:all) do
-    @string = parsed_ast.declarations[1].value
-    @string.should be_an_instance_of(XenConfigFile::AST::SingleQuotedString)
-  end
-  it "has a value" do
-    @string.value.should == "/boot/vmlinuz-2.6.18-xenU"
-  end
-end
-
-describe XenConfigFile::AST::DoubleQuotedString do
-  before(:all) do
-    @string = parsed_ast.declarations[4].value
-    @string.should be_an_instance_of(XenConfigFile::AST::DoubleQuotedString)
-  end
-  it "has a value" do
-    @string.value.should == "ey00-s00348"
-  end
-end
-
-describe XenConfigFile::AST::Number do
-  before(:all) do
-    @number = parsed_ast.declarations[2].value
-    @number.should be_an_instance_of(XenConfigFile::AST::Number)
-  end
-  it "has a value" do
-    @number.value.should == 712
   end
 end
 
@@ -252,11 +215,9 @@ describe XenConfigFile::AST::Disk do
     @disk.mode.should == "w"
   end
 
-  describe "when initialized with a string node" do
+  describe "when initialized with a string" do
     before(:all) do
-      @disk = XenConfigFile::AST::Disk.new(
-        XenConfigFile::AST::SingleQuotedString.new(:value => 'phy:/dev/ey00-data4/root-s00348,sda1,w')
-      )
+      @disk = XenConfigFile::AST::Disk.new('phy:/dev/ey00-data4/root-s00348,sda1,w')
     end
 
     it "sets the volume" do

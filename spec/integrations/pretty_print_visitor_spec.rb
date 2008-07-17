@@ -9,7 +9,7 @@ describe XenConfigFile::PrettyPrintVisitor, ".visit" do
 kernel = '/boot/vmlinuz-2.6.18-xenU'
 memory = 712
 maxmem = 4096
-name = "ey00-s00348"
+name = 'ey00-s00348'
 vif = [ 'bridge=xenbr0' ]
 disk = [
          'phy:/dev/ey00-data4/root-s00348,sda1,w',

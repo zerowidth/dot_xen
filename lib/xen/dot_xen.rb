@@ -503,6 +503,7 @@ module XenConfigFile
     end
 
     module ArrayList2
+      # FIXME (nathan) automate this (:recursive => true flag?)
       def build
         ([values.build] + remains.elements.map { |e| e.list.build }).flatten
       end
@@ -667,6 +668,7 @@ module XenConfigFile
     end
 
     module DiskArrayList2
+      # FIXME (nathan) automate this for arrays
       def build
         ([values.build] + remains.elements.map { |e| e.list.build }).flatten.map do |literal|
           literal.instance_of?(AST::Disk) ? literal : AST::Disk.new(literal)
@@ -966,6 +968,12 @@ module XenConfigFile
       return r0
     end
 
+    module Number0
+      def build
+        text_value.to_i
+      end
+    end
+
     def _nt_number
       start_index = index
       if node_cache[:number].has_key?(index)
@@ -992,7 +1000,8 @@ module XenConfigFile
         self.index = i0
         r0 = nil
       else
-        r0 = AST.create_node(:number).new(input, i0...index, s0)
+        r0 = SyntaxNode.new(input, i0...index, s0)
+        r0.extend(Number0)
       end
 
       node_cache[:number][start_index] = r0
@@ -1001,6 +1010,9 @@ module XenConfigFile
     end
 
     module String0
+      def build
+        text_value
+      end
     end
 
     module String1
@@ -1010,6 +1022,21 @@ module XenConfigFile
     end
 
     module String3
+      def build
+        elements[1].text_value
+      end
+    end
+
+    module String4
+    end
+
+    module String5
+    end
+
+    module String6
+      def build
+        elements[1].text_value
+      end
     end
 
     def _nt_string
@@ -1039,7 +1066,8 @@ module XenConfigFile
         self.index = i1
         r1 = nil
       else
-        r1 = AST.create_node(:string_literal).new(input, i1...index, s1)
+        r1 = SyntaxNode.new(input, i1...index, s1)
+        r1.extend(String0)
       end
       if r1
         r0 = r1
@@ -1085,7 +1113,7 @@ module XenConfigFile
             end
             if s7.last
               r7 = (SyntaxNode).new(input, i7...index, s7)
-              r7.extend(String0)
+              r7.extend(String1)
             else
               self.index = i7
               r7 = nil
@@ -1127,8 +1155,9 @@ module XenConfigFile
           end
         end
         if s3.last
-          r3 = (AST.create_node(:double_quoted_string)).new(input, i3...index, s3)
-          r3.extend(String1)
+          r3 = (SyntaxNode).new(input, i3...index, s3)
+          r3.extend(String2)
+          r3.extend(String3)
         else
           self.index = i3
           r3 = nil
@@ -1176,7 +1205,7 @@ module XenConfigFile
               end
               if s16.last
                 r16 = (SyntaxNode).new(input, i16...index, s16)
-                r16.extend(String2)
+                r16.extend(String4)
               else
                 self.index = i16
                 r16 = nil
@@ -1201,8 +1230,9 @@ module XenConfigFile
             end
           end
           if s13.last
-            r13 = (AST.create_node(:single_quoted_string)).new(input, i13...index, s13)
-            r13.extend(String3)
+            r13 = (SyntaxNode).new(input, i13...index, s13)
+            r13.extend(String5)
+            r13.extend(String6)
           else
             self.index = i13
             r13 = nil
@@ -1316,55 +1346,6 @@ module XenConfigFile
       end
 
       node_cache[:blank_line][start_index] = r0
-
-      return r0
-    end
-
-    module NonSpaceChar0
-    end
-
-    def _nt_non_space_char
-      start_index = index
-      if node_cache[:non_space_char].has_key?(index)
-        cached = node_cache[:non_space_char][index]
-        @index = cached.interval.end if cached
-        return cached
-      end
-
-      i0, s0 = index, []
-      i1 = index
-      if input.index(Regexp.new('[ \\n]'), index) == index
-        r2 = (SyntaxNode).new(input, index...(index + 1))
-        @index += 1
-      else
-        r2 = nil
-      end
-      if r2
-        r1 = nil
-      else
-        self.index = i1
-        r1 = SyntaxNode.new(input, index...index)
-      end
-      s0 << r1
-      if r1
-        if index < input_length
-          r3 = (SyntaxNode).new(input, index...(index + 1))
-          @index += 1
-        else
-          terminal_parse_failure("any character")
-          r3 = nil
-        end
-        s0 << r3
-      end
-      if s0.last
-        r0 = (SyntaxNode).new(input, i0...index, s0)
-        r0.extend(NonSpaceChar0)
-      else
-        self.index = i0
-        r0 = nil
-      end
-
-      node_cache[:non_space_char][start_index] = r0
 
       return r0
     end
