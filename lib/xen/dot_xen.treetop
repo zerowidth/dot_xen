@@ -7,7 +7,7 @@ module XenConfigFile
     rule assignment
       space_no_newline* name:variable space_no_newline* '=' space_no_newline* value:variable space* comment* <AST.create_node(:assignment)>
       /
-      space_no_newline* &"disk" name:variable space_no_newline* '=' space_no_newline* '[' space* disks:disk_array_list space* ']' space* comment* <AST.create_node(:disk_array_assignment)>
+      space_no_newline* &"disk" name:variable space_no_newline* '=' space_no_newline* '[' space* value:disk_array_list space* ']' space* comment* <AST.create_node(:assignment)>
       /
       space_no_newline* name:variable space_no_newline* '=' space_no_newline* '[' space* value:array_list space* ']' space* comment* <AST.create_node(:assignment)>
     end
@@ -16,7 +16,6 @@ module XenConfigFile
     # TODO reexamine the requirements for ,'s and inline comments
     rule array_list
       space* value:(variable/comment) ','? space* remains:(space* list:array_list space* ','?)* {
-        # FIXME (nathan) automate this (:recursive => :list) # expect "remains"
         def build
           ([value.build] + remains.elements.map { |e| e.list.build }).flatten
         end
@@ -25,14 +24,10 @@ module XenConfigFile
 
     # have to be careful with the recursive building of nodes -- each list gets iterated over list.size times
     # maybe there's a better way to define lists of disks?
-    # TODO why not parse the volume/device/mode here?
     rule disk_array_list
-      space* values:(variable/comment) ','? space* remains:(space* list:disk_array_list space* ','?)* {
-        # FIXME (nathan) automate this for arrays
+      space* value:(variable/comment) ','? space* remains:(space* list:disk_array_list space* ','?)* {
         def build
-          ([values.build] + remains.elements.map { |e| e.list.build }).flatten.map do |literal|
-            literal.instance_of?(AST::Disk) ? literal : AST::Disk.new(literal)
-          end
+          ([AST::Disk.new(value.build)] + remains.elements.map { |e| e.list.build }).flatten
         end
       }
     end

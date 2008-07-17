@@ -63,7 +63,7 @@ module XenConfigFile
         elements[2]
       end
 
-      def disks
+      def value
         elements[8]
       end
 
@@ -327,7 +327,7 @@ module XenConfigFile
           end
         end
         if s15.last
-          r15 = (AST.create_node(:disk_array_assignment)).new(input, i15...index, s15)
+          r15 = (AST.create_node(:assignment)).new(input, i15...index, s15)
           r15.extend(Assignment1)
         else
           self.index = i15
@@ -503,7 +503,6 @@ module XenConfigFile
     end
 
     module ArrayList2
-      # FIXME (nathan) automate this (:recursive => :list) # expect "remains"
       def build
         ([value.build] + remains.elements.map { |e| e.list.build }).flatten
       end
@@ -658,7 +657,7 @@ module XenConfigFile
     end
 
     module DiskArrayList1
-      def values
+      def value
         elements[1]
       end
 
@@ -668,11 +667,8 @@ module XenConfigFile
     end
 
     module DiskArrayList2
-      # FIXME (nathan) automate this for arrays
       def build
-        ([values.build] + remains.elements.map { |e| e.list.build }).flatten.map do |literal|
-          literal.instance_of?(AST::Disk) ? literal : AST::Disk.new(literal)
-        end
+        ([AST::Disk.new(value.build)] + remains.elements.map { |e| e.list.build }).flatten
       end
     end
 

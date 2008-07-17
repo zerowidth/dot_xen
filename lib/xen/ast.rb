@@ -22,41 +22,18 @@ module XenConfigFile
       def []=(name, value)
         index = self[name] ? declarations.index(self[name]) : declarations.size
 
-        new_value = node_for(value, name=="disk")
-        new_node = if value.kind_of?(Array) && name == "disk"
-          DiskArrayAssignment.new(:name => name, :disks => new_value)
-        else
-          Assignment.new(:name => name, :value => new_value)
+        if value.kind_of?(Array) && name == "disk"
+          value = value.map { |v| v.kind_of?(Disk) ? v : Disk.new(v) }
         end
+        new_node = Assignment.new(:name => name, :value => value)
 
         declarations[index] = new_node
       end
 
-      protected
-
-      def node_for(value, is_disk=false)
-        case value
-        when String
-          if is_disk
-            Disk.new(value)
-          else
-            value
-          end
-        when Integer
-          value
-        when Array
-          value.map { |v| node_for(v, is_disk) }
-        else
-          raise "don't know what to do with #{value.class}"
-        end
-      end
-
     end
 
-    # FIXME (nathan) :value => :value should automatically assume text_value unless it responds to #build
     node :comment, :value => lambda { |node| node.value.text_value }
     node :assignment, :name, :value
-    node :disk_array_assignment, :name, :disks
 
     node :disk do
       attr_reader :volume, :device, :mode

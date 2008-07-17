@@ -35,10 +35,6 @@ describe XenConfigFile::AST::ConfigFile do
     @config.declarations[1].should be_an_instance_of(XenConfigFile::AST::Assignment)
   end
 
-  it "has a disk array assignment" do
-    @config.declarations[6].should be_an_instance_of(XenConfigFile::AST::DiskArrayAssignment)
-  end
-
   it "has comments" do
     @config.should have(1).comments
     @config.comments.first.should be_an_instance_of(XenConfigFile::AST::Comment)
@@ -110,22 +106,31 @@ describe XenConfigFile::AST::ConfigFile do
           'phy:/dev/ey02-dedicated02/gfs-00155,sdb1,w!'
         ]
       end
+
       describe "when the disk already exists" do
         it "replaces the disks with new disks" do
           lambda { @config["disk"] = @disk_names }.should_not change(@config.declarations, :size)
-          @config["disk"].should have(4).disks
-          @config["disk"].disks.each { |disk| disk.should be_an_instance_of(XenConfigFile::AST::Disk) }
+          @config["disk"].value.size.should == 4
+          @config["disk"].value.each { |disk| disk.should be_an_instance_of(XenConfigFile::AST::Disk) }
         end
       end
+
       describe "when the disk doesn't exist" do
         before(:each) do
           @config.delete("disk")
         end
         it "adds a new disk node" do
           lambda { @config["disk"] = @disk_names }.should change(@config.declarations, :size).by(1)
-          @config["disk"].should be_an_instance_of(XenConfigFile::AST::DiskArrayAssignment)
+          @config["disk"].should be_an_instance_of(XenConfigFile::AST::Assignment)
         end
       end
+
+      it "acccepts an array of disk nodes" do
+        disks = @disk_names.map { |d| XenConfigFile::AST::Disk.new(d) }
+        @config["disk"] = disks
+        @config["disk"].value.should == disks
+      end
+
     end
 
   end
@@ -170,27 +175,29 @@ describe XenConfigFile::AST::Assignment do
 
   end
 
-end
+  describe "with disk on the lhs and declarations on the rhs" do
+    before(:each) do
+      @ast = parsed_ast(<<-EOS
+      disk = [
+              'phy:/dev/ey00-data4/root-s00348,sda1,w',
+              'phy:/dev/ey00-data4/swap-s00348,sda2,w',
+              'phy:/dev/ey00-data4/gfs-00218,sdb1,w!',
+             ]
+      EOS
+      ).declarations.first
+      @ast.should be_an_instance_of(XenConfigFile::AST::Assignment)
+    end
 
-describe XenConfigFile::AST::DiskArrayAssignment do
-  before(:all) do
-    @assignment = parsed_ast.declarations[6]
-    @assignment.should be_an_instance_of(XenConfigFile::AST::DiskArrayAssignment)
+    it "has a name" do
+      @ast.name.should == "disk"
+    end
   end
 
-  it "has a name" do
-    @assignment.name.should == "disk"
-  end
-
-  it "has an array of disks" do
-    @assignment.should have(3).disks
-    @assignment.disks.each { |disk| disk.should be_an_instance_of(XenConfigFile::AST::Disk)}
-  end
 end
 
 describe XenConfigFile::AST::Disk do
   before(:all) do
-    @disk = parsed_ast.declarations[6].disks[0]
+    @disk = parsed_ast.declarations[6].value[0]
     @disk.should be_an_instance_of(XenConfigFile::AST::Disk)
   end
 

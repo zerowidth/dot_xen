@@ -32,9 +32,9 @@ describe XenConfigFile::GrammarParser do
     has_the_same "root"
 
     it "has the same list of disks" do
-      @reparsed["disk"].disks.should_not be_empty
-      @parsed["disk"].disks.each_with_index do |disk, index|
-        other = @reparsed["disk"].disks[index]
+      @reparsed["disk"].value.should_not be_empty
+      @parsed["disk"].value.each_with_index do |disk, index|
+        other = @reparsed["disk"].value[index]
         disk.volume.should == other.volume
         disk.device.should == other.device
         disk.mode.should == other.mode

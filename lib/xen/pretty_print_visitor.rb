@@ -34,22 +34,6 @@ module XenConfigFile
       end
     end
 
-    visits AST::DiskArrayAssignment do |assignment|
-      if assignment.disks.size == 0 || assignment.disks.nil?
-        ""
-      elsif assignment.disks.size == 1
-        "#{assignment.lhs} = [ #{visit(assignment.disks[0])} ]"
-      else
-        str = "#{assignment.name} = [\n"
-        buf = ""
-        assignment.disks.each do |value|
-          buf << " "*str.size << visit(value) << ",\n"
-        end
-        buf << " "*(str.size-2) << "]"
-        str << buf << "\n"
-      end
-    end
-
     visits AST::Disk do |disk|
       "'#{disk.volume},#{disk.device},#{disk.mode}'"
     end
